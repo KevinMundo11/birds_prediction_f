@@ -47,7 +47,16 @@
         </div>
         <h1 class="display-5 fw-bold">Detector de Aves</h1>
         <div class="col-lg-6 mx-auto">
-            <p class="lead mb-0">Clasificación en tiempo real usando cámara web y modelo TensorFlow (.h5)</p>
+            <p class="lead mb-0">
+                Esta página clasifica diversas especies de aves en tiempo real.
+                El modelo fue entrenado utilizando una versión extendida del conjunto de datos 
+                <a href="https://www.kaggle.com/datasets/veeralakrishna/200-bird-species-with-11788-images" target="_blank" rel="noopener noreferrer">
+                    200 Bird Species with 11,788 Images de Kaggle
+                </a>.
+                Actualmente contamos con 525 especies de aves, cada una entrenada con aproximadamente 150 imágenes.
+                El modelo alcanza cerca de un 90% de accuracy, pero debido a la cantidad de clases, puede ser sensible en cámara.
+                Se recomienda mantener la imagen enfocada y estable para obtener mejores predicciones.
+            </p>
         </div>
     </div>
 
@@ -119,7 +128,7 @@
             })
             .catch(err => console.error("Error cámara:", err));
     }
-
+    
     function toggleDarkMode() {
         const body = document.body;
         const icon = document.getElementById('darkModeIcon');
