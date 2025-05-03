@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <title>Detector de Aves</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #resultado {
+            font-weight: bold;
+            font-size: 2rem;
+            text-align: center;
+        }
+        #modelo {
+            font-size: 1rem;
+            text-align: center;
+            margin-top: 10px;
+        }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        .border-bottom { border-bottom-color: #333 !important; }
+        #modelo { color: #0dcaf0 !important; }
+        .btn-dark-mode { background-color: #f8f9fa; color: #212529; }
+        body.light-mode { background-color: #ffffff; color: #212529; }
+        .light-mode .border-bottom { border-bottom-color: #dee2e6 !important; }
+        .light-mode #modelo { color: blue !important; }
+        .light-mode .btn-dark-mode { background-color: #212529; color: #f8f9fa; }
+        .footer { margin-top: 3rem; padding: 1.5rem 0; text-align: center; border-top: 1px solid #333; }
+        .light-mode .footer { border-top-color: #dee2e6; }
+        .logo-container { min-height: 100px; display: flex; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body class="dark-mode">
+<main>
+    <div class="px-4 py-2 my-2 text-center border-bottom">
+        <div class="text-end">
+            <button id="darkModeToggle" class="btn btn-sm btn-dark-mode" onclick="toggleDarkMode()">
+                <span id="darkModeIcon">☀️</span> Modo Claro
+            </button>
+        </div>
+        <div class="logo-container">
+            <img src="logo_mcd.png" alt="Logo Aves" width="100" height="100" onerror="this.style.display='none';">
+        </div>
+        <h1 class="display-5 fw-bold">Detector de Aves</h1>
+        <div class="col-lg-6 mx-auto">
+            <p class="lead mb-0">Clasificación en tiempo real usando cámara web y modelo TensorFlow (.h5)</p>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="text-center">
+            <video id="video" width="320" height="240" autoplay></video>
+            <button class="btn btn-info mb-2" onclick="switchCamera()">Cambiar Cámara</button>
+            <div id="resultado">Esperando predicción...</div>
+            <div id="modelo">Backend conectado</div>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <a href="#" class="github-link" target="_blank" rel="noopener noreferrer">Ver código en GitHub</a>
+    </div>
+</footer>
+
+<script>
+    const video = document.getElementById('video');
+    const resultado = document.getElementById('resultado');
+    const modeloTexto = document.getElementById('modelo');
+    let currentStream = null;
+    let currentFacingMode = "user";
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            currentStream = stream;
+            video.srcObject = stream;
+            iniciarPrediccion();
+        })
+        .catch(err => console.error("Error cámara:", err));
+
+    function iniciarPrediccion() {
+        setInterval(() => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 224;
+            canvas.height = 224;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('file', blob, 'frame.jpg');
+
+                fetch('https://birds-prediction-b.onrender.com/predict', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    resultado.textContent = `${data.class} (${(data.confidence * 100).toFixed(2)}%)`;
+                })
+                .catch(error => {
+                    resultado.textContent = 'Error en predicción';
+                    console.error(error);
+                });
+            }, 'image/jpeg');
+        }, 1000);
+    }
+
+    function switchCamera() {
+        currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+        if (currentStream) currentStream.getTracks().forEach(track => track.stop());
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } })
+            .then(stream => {
+                currentStream = stream;
+                video.srcObject = stream;
+            })
+            .catch(err => console.error("Error cámara:", err));
+    }
+
+    function toggleDarkMode() {
+        const body = document.body;
+        const icon = document.getElementById('darkModeIcon');
+        if (body.classList.contains('dark-mode')) {
+            body.classList.replace('dark-mode', 'light-mode');
+            icon.textContent = '🌙';
+        } else {
+            body.classList.replace('light-mode', 'dark-mode');
+            icon.textContent = '☀️';
+        }
+    }
+</script>
+</body>
+</html>
